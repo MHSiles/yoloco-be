@@ -61,7 +61,7 @@ import os
 #print(os.path.abspath("AtomicTest.pdf"))
 
 #pdf_template = "/Users/adityabora/Desktop/AtomicTest.pdf"
-pdf_template = "/Users/adityabora/Downloads/PortfolioAnalysisV2-3.pdf"
+pdf_template = "./PortfolioAnalysisV2.pdf"
 pdf_output = "output7.pdf"
 
 
