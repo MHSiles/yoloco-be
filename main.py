@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, send_file
 import requests
 import json
 import tkinter as tk
@@ -6,6 +6,8 @@ from tkinter import simpledialog
 import pdfrw
 import json
 from flask_cors import CORS
+import io
+import base64
 
 app = Flask(__name__)
 CORS(app)
@@ -100,7 +102,7 @@ def hello_world():
         'RiskGPA': '3.7'
     }
 
-    def fill_pdf(input_pdf_path, output_pdf_path, data_dict):
+    def fill_pdf(input_pdf_path, data_dict):
         template_pdf = pdfrw.PdfReader(input_pdf_path)
         for page in template_pdf.pages:
             annotations = page[ANNOT_KEY]
@@ -118,9 +120,17 @@ def hello_world():
                                     pdfrw.PdfDict(V='{}'.format(data_dict[key]))
                                 )
                                 annotation.update(pdfrw.PdfDict(AP=''))
-        pdfrw.PdfWriter().write(output_pdf_path, template_pdf)
+        # pdfrw.PdfWriter().write(output_pdf_path, template_pdf)
+        buf = io.BytesIO()
+        pdfrw.PdfWriter().write(buf, template_pdf)
+        buf.seek(0)
+        return base64.encodebytes(buf.read()).decode()
 
+    data = fill_pdf(pdf_template, data_dict)
     template_pdf.Root.AcroForm.update(pdfrw.PdfDict(NeedAppearances=pdfrw.PdfObject('true')))  # NEW
-    fill_pdf(pdf_template, pdf_output, data_dict)
+
+    return data
+    # return send_file(data, mimetype='application/pdf')
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
+
