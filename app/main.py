@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file
+from flask import Flask, request
 import requests
 import json
 import tkinter as tk
@@ -130,7 +130,4 @@ def hello_world():
     template_pdf.Root.AcroForm.update(pdfrw.PdfDict(NeedAppearances=pdfrw.PdfObject('true')))  # NEW
 
     return data
-    # return send_file(data, mimetype='application/pdf')
-
-    return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
 
