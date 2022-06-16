@@ -1,6 +1,5 @@
 from flask import Flask, request
 import requests
-import json
 import tkinter as tk
 from tkinter import simpledialog
 import pdfrw
