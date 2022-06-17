@@ -4,22 +4,32 @@ import pdfrw
 from flask_cors import CORS
 import io
 import base64
+from random import randint
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/")
-def hello_world():
-    # the input dialog
-    # USER_INP = simpledialog.askstring(title="Wallet Info",
-    #                                 prompt="Please Enter your Wallet ID:")
+bitcoinAmount = 0
+ethereumAmount = 0
 
-    APIKEY = '43044ac0170dc40fa60cfd249ef3307b64edbab8'
+async def getWalletInformation(api_key, wallet, type):
+    with requests.Session() as session:
+        h = {'Content-Type': 'application/json',
+            'X-API-KEY': api_key}
+        r = session.get(f'https://rest.cryptoapis.io/v2/wallet-as-a-service/wallets/{wallet}/{type}',headers=h)
+        r.raise_for_status()
+        qdata = r.json()
+        return float(qdata['data']['item']['confirmedBalance']['amount'])
+
+
+@app.route("/", methods=['GET', 'POST'])
+async def get_crypto_score():
+
+    API_KEY = '43044ac0170dc40fa60cfd249ef3307b64edbab8'
     BASE = 'https://rest.cryptoapis.io/v2'
     BLOCKCHAIN = 'bitcoin'
     NETWORK = 'mainnet'
-    WALLETID = request.args.get('walletId')
-    print(WALLETID)
+    WALLET_LIST = request.form['listOfWallets'].split(',')
 
     #used if we are looking for data on a particular transaction 
     # myTestNetWallet - 62a8e61a25a05500079dda90
@@ -28,33 +38,19 @@ def hello_world():
 
     #blockchain-data/bitcoin/testnet/addresses/mzYijhgmzZrmuB7wBDazRKirnChKyow4M3?
 
-
-    #get Bitcoin amount from wallet
-    with requests.Session() as session:
-        h = {'Content-Type': 'application/json',
-            'X-API-KEY': APIKEY}
-        r = session.get(f'https://rest.cryptoapis.io/v2/wallet-as-a-service/wallets/{WALLETID}/bitcoin/testnet',headers=h)
-        r.raise_for_status()
-        qdata = r.json()
-        bitCoinAmount = qdata['data']['item']['confirmedBalance']['amount']
-        
-    #get Ethereum amount from wallet
-    with requests.Session() as session:
-        h1 = {'Content-Type': 'application/json',
-            'X-API-KEY': APIKEY}
-        r1 = session.get(f'https://rest.cryptoapis.io/v2/wallet-as-a-service/wallets/{WALLETID}/ethereum/ropsten',headers=h1)
-        r1.raise_for_status()
-        qdata1 = r1.json()
-        ethereumAmount = qdata1['data']['item']['confirmedBalance']['amount']   
-        
-
+    for wallet in WALLET_LIST:
+        print(wallet)
+        global bitcoinAmount
+        global ethereumAmount
+        bitcoinAmount += await getWalletInformation(API_KEY, wallet, 'bitcoin/testnet')
+        ethereumAmount += await getWalletInformation(API_KEY, wallet, 'ethereum/ropsten')
 
     # #test for a wallet on the chain
     # #blockchain-data/bitcoin/testnet/addresses/mzYijhgmzZrmuB7wBDazRKirnChKyow4M3?
     # with requests.Session() as session:
     #     h = {'Content-Type': 'application/json',
-    #          'X-API-KEY': APIKEY}
-    #     r = session.get(f'https://rest.cryptoapis.io/v2/blockchain-data/bitcoin/testnet/addresses/{WALLETID}', headers=h)
+    #          'X-API-KEY': API_KEY}
+    #     r = session.get(f'https://rest.cryptoapis.io/v2/blockchain-data/bitcoin/testnet/addresses/{WALLET_LIST}', headers=h)
     #     r.raise_for_status()
     #     print(json.dumps(r.json(), indent=4, sort_keys=True))
 
@@ -84,15 +80,14 @@ def hello_world():
             if annotation[SUBTYPE_KEY] == WIDGET_SUBTYPE_KEY:
                 if annotation[ANNOT_FIELD_KEY]:
                     key = annotation[ANNOT_FIELD_KEY][1:-1]
-                    print(key)
 
     from datetime import date
 
     data_dict = {
-        'Risk': '3.8',
-        'BitcoinAmount':  bitCoinAmount,
+        'Risk': randint(0,100),
+        'BitcoinAmount':  bitcoinAmount,
         'EthAmount':    ethereumAmount,
-        'USDCAmount': '30',
+        'USDCAmount': randint(0, 10),
         'RiskGPA': '3.7'
     }
 
@@ -121,6 +116,9 @@ def hello_world():
         return base64.encodebytes(buf.read()).decode()
 
     data = fill_pdf(pdf_template, data_dict)
+
+    bitcoinAmount = 0
+    ethereumAmount = 0
 
     return data
 
